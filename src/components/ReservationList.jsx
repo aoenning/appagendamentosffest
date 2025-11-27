@@ -52,7 +52,9 @@ const ReservationList = () => {
 
     const handleWhatsApp = (reservation) => {
         const phone = reservation.phone.replace(/\D/g, '');
-        const message = `Olá ${reservation.clientName}, sua reserva para o dia ${new Date(reservation.date).toLocaleDateString('pt-BR')} foi confirmada!`;
+        const [year, month, day] = reservation.date.split('-');
+        const date = new Date(year, month - 1, day);
+        const message = `Olá ${reservation.clientName}, sua reserva para o dia ${date.toLocaleDateString('pt-BR')} foi confirmada!`;
         const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
@@ -193,8 +195,8 @@ const ReservationList = () => {
                                             {reservation.clientName}
                                         </h3>
                                         <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${reservation.status === 'confirmed'
-                                                ? 'bg-green-100 text-green-800 border border-green-200'
-                                                : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
+                                            ? 'bg-green-100 text-green-800 border border-green-200'
+                                            : 'bg-yellow-100 text-yellow-800 border border-yellow-200'
                                             }`}>
                                             {reservation.status === 'confirmed' ? '✓ Confirmado' : '⏳ Pendente'}
                                         </span>
@@ -204,7 +206,14 @@ const ReservationList = () => {
                                 <div className="space-y-2.5 text-sm text-gray-600">
                                     <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
                                         <Calendar className="w-4 h-4 text-indigo-500 flex-shrink-0" />
-                                        <span className="font-medium">{new Date(reservation.date).toLocaleDateString('pt-BR')}</span>
+                                        <span className="font-medium">
+                                            {(() => {
+                                                if (!reservation.date) return 'Data não definida';
+                                                const [year, month, day] = reservation.date.split('-');
+                                                const date = new Date(year, month - 1, day);
+                                                return date.toLocaleDateString('pt-BR');
+                                            })()}
+                                        </span>
                                     </div>
 
                                     <div className="flex items-center gap-2 bg-gray-50 p-2 rounded-lg">
