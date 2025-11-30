@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
-import { collection, addDoc } from 'firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { collection, addDoc, query, onSnapshot, orderBy } from 'firebase/firestore';
 import { db } from '../firebaseConfig';
-import { Calendar, Users, Phone, User, Save, Loader2, CheckCircle, DollarSign, CreditCard, Table } from 'lucide-react';
+import { Calendar, Users, Phone, User, Save, Loader2, CheckCircle, DollarSign, CreditCard, Table, AlertTriangle } from 'lucide-react';
 
 const ReservationForm = () => {
     const [loading, setLoading] = useState(false);
     const [success, setSuccess] = useState(false);
+    const [reservations, setReservations] = useState([]);
     const [formData, setFormData] = useState({
         clientName: '',
         date: '',
@@ -17,6 +18,20 @@ const ReservationForm = () => {
         notes: ''
     });
 
+    // Fetch existing reservations to check for reserved dates
+    useEffect(() => {
+        const q = query(collection(db, "reservations"), orderBy("date", "asc"));
+        const unsubscribe = onSnapshot(q, (querySnapshot) => {
+            const reservationsData = [];
+            querySnapshot.forEach((doc) => {
+                reservationsData.push({ id: doc.id, ...doc.data() });
+            });
+            setReservations(reservationsData);
+        });
+
+        return () => unsubscribe();
+    }, []);
+
     const handleChange = (e) => {
         const { name, value } = e.target;
         setFormData(prev => ({
@@ -24,6 +39,14 @@ const ReservationForm = () => {
             [name]: value
         }));
     };
+
+    // Check if selected date is already reserved
+    const getReservationsForDate = (selectedDate) => {
+        if (!selectedDate) return [];
+        return reservations.filter(reservation => reservation.date === selectedDate);
+    };
+
+    const reservationsOnSelectedDate = getReservationsForDate(formData.date);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -120,6 +143,59 @@ const ReservationForm = () => {
                                     className="block w-full pl-10 pr-3 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-colors shadow-sm"
                                 />
                             </div>
+
+                            {/* Date Availability Indicator */}
+                            {formData.date && (
+                                <div className="mt-3">
+                                    {reservationsOnSelectedDate.length === 0 ? (
+                                        <div className="flex items-center gap-2 bg-green-50 border border-green-200 rounded-lg p-3">
+                                            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+                                            <div>
+                                                <p className="text-sm font-semibold text-green-800">Data disponível</p>
+                                                <p className="text-xs text-green-600">Nenhuma reserva encontrada para esta data</p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="bg-yellow-50 border border-yellow-300 rounded-lg p-3 space-y-2">
+                                            <div className="flex items-start gap-2">
+                                                <AlertTriangle className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-semibold text-yellow-800">
+                                                        Data já reservada ({reservationsOnSelectedDate.length} {reservationsOnSelectedDate.length === 1 ? 'reserva' : 'reservas'})
+                                                    </p>
+                                                    <p className="text-xs text-yellow-600 mt-1">
+                                                        Esta data já possui reserva(s). Você pode continuar, mas verifique se é intencional.
+                                                    </p>
+                                                </div>
+                                            </div>
+
+                                            {/* Show existing reservation details */}
+                                            <div className="space-y-2 mt-2">
+                                                {reservationsOnSelectedDate.map((reservation, index) => (
+                                                    <div key={reservation.id} className="bg-white border border-yellow-200 rounded-md p-2 text-xs">
+                                                        <div className="flex items-center gap-2 text-gray-700">
+                                                            <User className="w-3.5 h-3.5 text-yellow-600" />
+                                                            <span className="font-semibold">{reservation.clientName}</span>
+                                                        </div>
+                                                        {reservation.guests && (
+                                                            <div className="flex items-center gap-2 text-gray-600 mt-1">
+                                                                <Users className="w-3.5 h-3.5 text-yellow-600" />
+                                                                <span>{reservation.guests} convidados</span>
+                                                            </div>
+                                                        )}
+                                                        {reservation.phone && (
+                                                            <div className="flex items-center gap-2 text-gray-600 mt-1">
+                                                                <Phone className="w-3.5 h-3.5 text-yellow-600" />
+                                                                <span>{reservation.phone}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
