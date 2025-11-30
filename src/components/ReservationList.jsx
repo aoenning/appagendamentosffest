@@ -54,7 +54,7 @@ const ReservationList = () => {
         const phone = reservation.phone.replace(/\D/g, '');
         const [year, month, day] = reservation.date.split('-');
         const date = new Date(year, month - 1, day);
-        const message = `Olá ${reservation.clientName}, sua reserva para o dia ${date.toLocaleDateString('pt-BR')} foi confirmada!`;
+        const message = `Olá ${reservation.clientName}, sua reserva na SFFest para o dia ${date.toLocaleDateString('pt-BR')} foi confirmada!`;
         const url = `https://wa.me/55${phone}?text=${encodeURIComponent(message)}`;
         window.open(url, '_blank');
     };
